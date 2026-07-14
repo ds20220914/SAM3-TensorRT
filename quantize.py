@@ -1,19 +1,10 @@
-"""INT8 post-training quantization (PTQ) of the SAM3 detector via embedl-deploy.
+"""INT8 post-training quantization (PTQ) of the SAM3 detector.
 
-Run on the GPU box after torch_export.py. Follows the tested recipe from
-https://docs.embedl.com/embedl-deploy/latest/auto_tutorials/sam3.html — using
-embedl-deploy instead of raw nvidia-modelopt is what avoids the whole set of
-export problems we hit with modelopt directly (GuardOnDataDependentSymNode
-from its TensorQuantizer's plain-Python amax checks, un-folded dynamic axes,
-auto-quantized INT32 Conv bias TensorRT's parser rejects): embedl-deploy's
-quantized modules are themselves torch.export-safe, so no post-export ONNX
-surgery (our old fold_onnx.py) is needed at all.
+Run on the GPU box after torch_export.py. Calibrates from
+calibration_images/*.jpg (this project is image-only), reusing
+model_utils.py's preprocess_image/tokenize_prompt.
 
-Difference from the tutorial: it calibrates from 16 sampled frames of a demo
-video; we calibrate from calibration_images/*.jpg instead (this project is
-image-only), reusing model_utils.py's preprocess_image/tokenize_prompt.
-
-pip install "embedl-deploy[tensorrt]"
+pip install "embedl-deploy[tensorrt]"  (https://docs.embedl.com)
 
 The [tensorrt] extra is supposed to pull in the companion embedl-deploy-tensorrt
 package that actually provides the backend — if transform()/quantize() raise
@@ -57,7 +48,7 @@ def load_calibration_images() -> list[torch.Tensor]:
 
 
 def quantize_to_qdq(gm: torch.fx.GraphModule) -> None:
-    """Fuse and INT8-quantize the fp32 graph with embedl-deploy."""
+    """Fuse and INT8-quantize the fp32 graph."""
     img = torch.randn(1, 3, IMAGE_SIZE, IMAGE_SIZE, device=DEVICE)
     ids = torch.randint(0, 32000, (1, CONTEXT_LENGTH), dtype=torch.long, device=DEVICE)
     fused = transform(gm, (img, ids)).model.eval().to(device=DEVICE, dtype=torch.float32)

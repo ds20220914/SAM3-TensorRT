@@ -2,21 +2,25 @@
 
 Run on the GPU box, after quantize.py and export_onnx.py. TensorRT reads the
 QuantizeLinear/DequantizeLinear nodes in the ONNX graph directly (explicit
-quantization) — no separate INT8 calibrator is needed. Mirrors
-https://docs.embedl.com/embedl-deploy/latest/auto_tutorials/sam3.html's build
-step: INT8+FP16 hybrid precision (TensorRT picks per-layer, so anything it
-can't/shouldn't run in pure INT8 falls back to FP16 instead of failing the
-build) rather than INT8-only.
+quantization) — no separate INT8 calibrator is needed. INT8+FP16 hybrid
+precision: TensorRT picks per-layer, so anything it can't/shouldn't run in
+pure INT8 falls back to FP16 instead of failing the build.
 
 pip install tensorrt
 """
+import os
 import time
 
 import tensorrt as trt
 
 from constant import BUILDER_OPTIMIZATION_LEVEL, ENGINE, QDQ_ONNX, TIMING_CACHE
 
-WORKSPACE_BYTES = 4 << 30  # 4 GiB
+# Override via env vars for memory-constrained boards (e.g. Jetson Orin
+# Nano's 8GB shared CPU/GPU pool, where 4 GiB just for the builder's tactic
+# scratch space starves everything else) — e.g.:
+#   TRT_WORKSPACE_MB=512 TRT_OPT_LEVEL=2 python3 build_engine.py
+WORKSPACE_BYTES = int(os.environ.get("TRT_WORKSPACE_MB", 4096)) << 20
+OPT_LEVEL = int(os.environ.get("TRT_OPT_LEVEL", BUILDER_OPTIMIZATION_LEVEL))
 
 
 def build_int8_engine() -> None:
@@ -36,7 +40,7 @@ def build_int8_engine() -> None:
 
     config = builder.create_builder_config()
     config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, WORKSPACE_BYTES)
-    config.builder_optimization_level = BUILDER_OPTIMIZATION_LEVEL
+    config.builder_optimization_level = OPT_LEVEL
     config.set_flag(trt.BuilderFlag.FP16)
     config.set_flag(trt.BuilderFlag.INT8)
 
@@ -45,7 +49,8 @@ def build_int8_engine() -> None:
     config.set_timing_cache(timing_cache, ignore_mismatch=False)
 
     print(
-        f"Building INT8+FP16 engine (opt-level {BUILDER_OPTIMIZATION_LEVEL}). "
+        f"Building INT8+FP16 engine (opt-level {OPT_LEVEL}, "
+        f"workspace {WORKSPACE_BYTES / (1 << 20):.0f} MB). "
         "First build with no timing cache can take 15-30 min."
     )
     t0 = time.perf_counter()

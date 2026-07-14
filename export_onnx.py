@@ -1,14 +1,6 @@
 """Export the QDQ .pt2 graph to ONNX, via the dynamo exporter.
 
-Run on the GPU box after quantize.py. Unlike our old approach (legacy
-TorchScript tracer, because modelopt's quantizers had torch.export-unsafe
-Python branching), embedl-deploy's quantized modules ARE torch.export-safe,
-so we can use the modern dynamo=True exporter directly here — which is also
-what fixes the two problems the old fold_onnx.py had to patch around after
-the fact (un-folded dynamic-shape Slice axes, auto-quantized INT32 Conv bias):
-neither shows up with this export path, so do_constant_folding=True is safe
-to leave on (no OOM — the old OOM was specific to the legacy tracer having to
-hold every intermediate activation in memory at once).
+Run on the GPU box after quantize.py.
 """
 import torch
 

@@ -14,10 +14,9 @@ def _fix_inplace_detach(exported: torch.export.ExportedProgram) -> torch.export.
 
     SAM3's _prepare_multilevel_features does an in-place .detach_() on a view
     (of a lifted positional-embedding constant), which torch.fx.Interpreter-
-    based tools (e.g. embedl-deploy's transform()) can't replay ("Can't detach
-    views in-place"). Only this one op is swapped — unlike run_decompositions()
-    (tried first, reverted), this leaves every other op exactly as exported so
-    transform()'s Conv/Linear pattern matching still sees what it expects.
+    based tools can't replay ("Can't detach views in-place"). Only this one op
+    is swapped — leaves every other op exactly as exported so downstream
+    Conv/Linear pattern matching still sees what it expects.
     """
     gm = exported.graph_module
     n_fixed = 0
