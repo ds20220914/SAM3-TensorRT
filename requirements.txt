@@ -1,0 +1,16 @@
+# For the remote Linux + NVIDIA GPU box. TensorRT/CUDA don't exist on macOS,
+# so none of this installs or runs on the dev Mac this was written on.
+torch>=2.5
+accelerate
+git+https://github.com/huggingface/transformers.git  # SAM3 needs the dev branch (config: transformers_version 5.0.0.dev0)
+onnx
+onnxscript
+onnxruntime-gpu       # validate.py only
+embedl-deploy[tensorrt]  # PTQ quantization — see https://docs.embedl.com/embedl-deploy/latest/auto_tutorials/sam3.html
+tensorrt-cu12         # if this fails, install via NVIDIA's pip index: https://pypi.nvidia.com
+pycuda                # infer.py — bypasses torch.cuda's stricter driver-version check
+pillow
+numpy<2  # pycuda's wheel is compiled against numpy 1.x's C ABI; numpy 2.x breaks
+         # it at import time (AttributeError: _ARRAY_API not found). pip may warn
+         # about a conflict with cupy-cuda12x wanting numpy>=2.0 if that's also
+         # installed — harmless for what this project actually uses.

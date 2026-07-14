@@ -1,0 +1,13 @@
+# Meta SAM3 gated checkpoint — licensed, not ours to redistribute, and 16GB
+sam3/
+
+# Build artifacts — regenerate via torch_export.py -> quantize.py -> export_onnx.py -> build_engine.py
+artifacts/
+cpp/build/
+
+# Python / editor / OS noise
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+.claude/
